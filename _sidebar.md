@@ -2,7 +2,6 @@
 * [go in action](goinaction/)
 * [CS97SI](cs97si/)
 * [sql](sql/)
-* [leetcode](leetcode/)
 * [离散数学](Discretemathematics/)
 * [数据库系统概念](DatabaseSystemConcepts/)
 * [编译原理](compilerprinciple/)

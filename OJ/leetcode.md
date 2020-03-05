@@ -6,7 +6,7 @@
 
 进行一次迭代，检查表中是否存在`target-nums[i]`的元素，如果存在则返回对应解；
 
-```c++
+```cpp
 class Solution {
 public:
     vector<int> twoSum(vector<int>& nums, int target) {
@@ -28,7 +28,7 @@ public:
 
 增加一个dummyHead可以使头节点为子节点，不需要特殊处理。
 
-```c++
+```cpp
 class Solution
 {
 public:
