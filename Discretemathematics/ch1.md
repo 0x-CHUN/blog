@@ -79,3 +79,117 @@
 唯一性量词：断言只有唯一一个个体使得某种性质成立。
 
 **量词的优先级高于逻辑运算符！**
+
+## 嵌套量词
+
+嵌套量词的顺序会影响命题的真值；
+
+## 推理规则
+
+有效论证的形式：
+$$
+\begin{align*}
+& p\rightarrow q  \\
+& p \\
+& \rule[0pt]{2cm}{0.05em} \\ 
+& \therefore q
+\end{align*}
+$$
+其他推理规则：
+
+* 假言推理
+  $$
+  \begin{align*}
+  &  p \\
+  & p\rightarrow q \\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore q
+  \end{align*}
+  $$
+
+* 取据式
+  $$
+  \begin{align*}
+  &  \neg q \\
+  & p\rightarrow q \\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore  \neg p
+  \end{align*}
+  $$
+
+* 假言三段论
+  $$
+  \begin{align*}
+  &  p\rightarrow q\\
+  &  q\rightarrow r\\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore p\rightarrow r
+  \end{align*}
+  $$
+
+* 析取三段论
+  $$
+  \begin{align*}
+  &  p\vee q\\
+  &  \neg p\\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore q
+  \end{align*}
+  $$
+
+* 附加律
+  $$
+  \begin{align*}
+  &  p \\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore p\vee q
+  \end{align*}
+  $$
+
+* 化简律
+  $$
+  \begin{align*}
+  &  p\wedge q\\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore p
+  \end{align*}
+  $$
+
+* 合取律
+  $$
+  \begin{align*}
+  &  p\\
+  &  q\\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore p \wedge q
+  \end{align*}
+  $$
+  
+
+* 消解律
+  $$
+  \begin{align*}
+  &  p\vee q\\
+  &  \neg q\vee r\\
+  & \rule[0pt]{2cm}{0.05em} \\ 
+  & \therefore q \vee r
+  \end{align*}
+  $$
+
+谬论：
+
+* 肯定结论的谬误：$(p \rightarrow  q) \wedge q \rightarrow p$
+* 否定假设的谬误：$(p \rightarrow q)\wedge \neg p \rightarrow \neg q$
+
+定理：能够被证明式真的语句
+
+证明：建立定理真实性的有效论证
+
+证明定理的方法：
+
+* 直接证明
+* 反证法
+* 归谬证明法
+* 穷举证明法
+* 分情况证明法
+

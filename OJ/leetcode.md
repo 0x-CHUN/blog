@@ -59,3 +59,28 @@ public:
 };
 ```
 
+#### [3. 无重复字符的最长子串](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/)
+
+思路：用一个数组映射每个字符最后出现的位置，设置一个变量left为当前字符的最后出现的位置，然后遍历整个字符，先将left赋值为当前字符最后出现的位置（默认为-1，便于计算距离），然后更新映射的数组里的值，然后更新无重复字符的子串的长度为max(之前的无重复字符的子串长度，当前位置-当前字符最后出现的位置)；
+
+```cpp
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        vector<int> m(256,-1); //每个字符与最后出现的位置之间的映射
+        int left = -1;// 初始化为-1，便于计算
+        int res=0;
+        for (int i = 0; i < s.length(); i++)
+        {
+            left = max(left, m[s[i]]);// left记录当前字符的最后出现的位置
+            m[s[i]]=i;//跟新当前字符的最后出现的位置，为下一轮循环准备
+            res = max(res, i - left);// 跟新无重复字符的最长子串长度
+        }
+        return res;
+    }
+};
+```
+
+#### [4. 寻找两个有序数组的中位数](https://leetcode-cn.com/problems/median-of-two-sorted-arrays/)
+
+思路：因为为有序数组，且时间复杂度为$O(log(m+n))$，则一般为二分查找；[]()
