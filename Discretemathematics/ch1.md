@@ -38,9 +38,13 @@
 
 逻辑运算的优先级：
 
-![image-20200110113358872](assets/image-20200110113358872.png)
-
-
+| 运算符              | 优先级 |
+| ------------------- | ------ |
+| $ \neg $            | 1      |
+| $ \vee $            | 2      |
+| $ \wedge $          | 3      |
+| $ \rightarrow $     | 4      |
+| $ \leftrightarrow $ | 5      |
 
 ## 命题等价式
 
@@ -87,94 +91,42 @@
 ## 推理规则
 
 有效论证的形式：
-$$
-\begin{align*}
-& p\rightarrow q  \\
-& p \\
-& \rule[0pt]{2cm}{0.05em} \\ 
-& \therefore q
-\end{align*}
-$$
+
+![Latex公式渲染之后的图片](assets/test.image.latex.svg)
+
 其他推理规则：
 
 * 假言推理
-  $$
-  \begin{align*}
-  &  p \\
-  & p\rightarrow q \\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore q
-  \end{align*}
-  $$
-
-* 取据式
-  $$
-  \begin{align*}
-  &  \neg q \\
-  & p\rightarrow q \\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore  \neg p
-  \end{align*}
-  $$
-
-* 假言三段论
-  $$
-  \begin{align*}
-  &  p\rightarrow q\\
-  &  q\rightarrow r\\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore p\rightarrow r
-  \end{align*}
-  $$
-
-* 析取三段论
-  $$
-  \begin{align*}
-  &  p\vee q\\
-  &  \neg p\\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore q
-  \end{align*}
-  $$
-
-* 附加律
-  $$
-  \begin{align*}
-  &  p \\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore p\vee q
-  \end{align*}
-  $$
-
-* 化简律
-  $$
-  \begin{align*}
-  &  p\wedge q\\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore p
-  \end{align*}
-  $$
-
-* 合取律
-  $$
-  \begin{align*}
-  &  p\\
-  &  q\\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore p \wedge q
-  \end{align*}
-  $$
   
-
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342710562.svg)
+  
+* 取据式
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342727970.svg)
+  
+* 假言三段论
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342742275.svg)
+  
+* 析取三段论
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342760139.svg)
+  
+* 附加律
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342782956.svg)
+  
+* 化简律
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342799133.svg)
+  
+* 合取律
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342811806.svg)
+  
 * 消解律
-  $$
-  \begin{align*}
-  &  p\vee q\\
-  &  \neg q\vee r\\
-  & \rule[0pt]{2cm}{0.05em} \\ 
-  & \therefore q \vee r
-  \end{align*}
-  $$
+  
+  ![Latex公式渲染之后的图片](assets/test.image.latex-1584342824980.svg)
 
 谬论：
 

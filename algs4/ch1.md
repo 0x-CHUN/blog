@@ -122,7 +122,62 @@ public class UF
 
 实现：
 
-```java
+* quick union：
 
-```
+  ```java
+  public int find(int p) {
+      while (p != parent[p])
+          p = parent[p];
+      return p;
+  }
+  public void union(int p, int q) {
+      int rootP = find(p);
+      int rootQ = find(q);
+      if (rootP == rootQ) return;
+      parent[rootP] = rootQ; 
+      count--;
+  }
+  ```
+  
+* quick find:
+
+  ```java
+  public int find(int p) {
+      return id[p];
+  }
+  public void union(int p, int q) {
+      int pID = id[p];
+      int qID = id[q];  
+      if (pID == qID) return;
+      for (int i = 0; i < id.length; i++)
+          if (id[i] == pID) id[i] = qID;
+      count--;
+  }
+  ```
+
+* 加权quick union：
+
+  ```java
+  public int find(int p) {
+      while (p != parent[p])
+          p = parent[p];
+      return p;
+  }
+  public void union(int p, int q) {
+      int rootP = find(p);
+      int rootQ = find(q);
+      if (rootP == rootQ) return;
+      if (size[rootP] < size[rootQ]) {
+          parent[rootP] = rootQ;
+          size[rootQ] += size[rootP];
+      }
+      else {
+          parent[rootQ] = rootP;
+          size[rootP] += size[rootQ];
+      }
+      count--;
+  }
+  ```
+
+
 

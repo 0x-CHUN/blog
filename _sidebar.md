@@ -6,7 +6,7 @@
 * [数据库系统概念](DatabaseSystemConcepts/)
 * [编译原理](compilerprinciple/)
 * [spring in action](springinaction/)
-* [spring boot基础](springbootbasic/)
 * [OJ](OJ/)
 * [算法第四版](algs4/)
 * [SICP](sicp/)
+* [CSnotes](csnotes/)
