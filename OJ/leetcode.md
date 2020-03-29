@@ -83,4 +83,204 @@ public:
 
 #### [4. 寻找两个有序数组的中位数](https://leetcode-cn.com/problems/median-of-two-sorted-arrays/)
 
-思路：因为为有序数组，且时间复杂度为$O(log(m+n))$，则一般为二分查找；[]()
+思路：因为为有序数组，且要求的时间复杂度为$O(log(m+n))$，则一般为二分查找；
+
+```cpp
+class Solution {
+public:
+	double findMedianSortedArrays(vector<int>& nums1, vector<int>& nums2) {
+		int n = nums1.size();
+		int m = nums2.size();
+
+		if (n > m)  
+		{
+			return findMedianSortedArrays(nums2, nums1);
+		}
+		int LMax1, LMax2, RMin1, RMin2, c1, c2, lo = 0, hi = 2 * n;  
+
+		while (lo <= hi)   //二分
+		{
+			c1 = (lo + hi) / 2; 
+			c2 = m + n - c1;
+
+			LMax1 = (c1 == 0) ? INT_MIN : nums1[(c1 - 1) / 2];
+			RMin1 = (c1 == 2 * n) ? INT_MAX : nums1[c1 / 2];
+			LMax2 = (c2 == 0) ? INT_MIN : nums2[(c2 - 1) / 2];
+			RMin2 = (c2 == 2 * m) ? INT_MAX : nums2[c2 / 2];
+
+			if (LMax1 > RMin2)
+				hi = c1 - 1;
+			else if (LMax2 > RMin1)
+				lo = c1 + 1;
+			else
+				break;
+		}
+		return (max(LMax1, LMax2) + min(RMin1, RMin2)) / 2.0;
+	}
+};
+```
+
+#### [5. 最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
+
+思路：动态规划
+
+* 令$dp[i][j]$代表字符串从i到j是否为字符串
+
+* 递推关系：
+  $$
+  dp[i][j]=(dp[i+1][j-1] \&\& S_i == S_j)
+  $$
+
+* base case：单个字符为回文串：$dp[i][i] == true$，长度为2的回文字符串：$dp[i][i+1]=(S_i==S_j)$;
+
+```cpp
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int n = s.length();
+        if(n == 0 || n == 1)
+            return s;
+        int start=0;//起始点
+        int maxlen=1;//最大的长度
+        vector<vector<int>> dp(n,vector<int>(n));
+        for (int i = 0; i < n; i++)
+        {
+            dp[i][i]=1;
+            if(i < n-1 && s[i] == s[i+1]){
+                dp[i][i+1] = 1;
+                maxlen = 2;
+                start=i;
+            }
+        }
+        for(int len = 3; len <= n;len++){
+            for (int i = 0; i + len -1 < n; i++)
+            {
+                int j = i + len -1;
+                if(s[i] == s[j] && dp[i+1][j-1] ==1){
+                    dp[i][j]=1;
+                    maxlen=len;
+                    start=i;
+                }
+            }
+            
+        }
+        return s.substr(start, maxlen);
+    }
+};
+```
+
+#### [6. Z 字形变换](https://leetcode-cn.com/problems/zigzag-conversion/)
+
+思路：按照行读取，一个小勾为一个单元，规律如下：
+
+![image-20200328112017504](assets/image-20200328112017504.png)
+
+```cpp
+class Solution
+{
+public:
+    string convert(string s, int numRows)
+    {
+        if (numRows == 1)
+            return s;
+        int n = s.size();
+        int steps = 2 * (numRows - 1);
+        string res;
+        for (int i = 0; i < numRows; i++)
+        {
+            for (int j = 0; j + i < n; j += steps)
+            {
+                res += s[j + i];
+                if (i != 0 && i != numRows - 1 && j + steps - i < n)
+                    res += s[j + steps - i];
+            }
+        }
+        return res;
+    }
+};
+```
+
+#### [7. 整数反转](https://leetcode-cn.com/problems/reverse-integer/)
+
+思路：注意溢出
+
+```cpp
+class Solution {
+public:
+    int reverse(int x) {
+        int res=0;
+        while (x != 0)
+        {
+            int pop = x%10;
+            x /= 10;
+            if (res > INT_MAX/10 || (res == INT_MAX / 10 && pop > 7))
+                return 0;
+            if (res < INT_MIN/10 || (res == INT_MIN / 10 && pop < -8)) 
+                return 0;
+            res = res * 10 + pop;
+        }
+        return res;
+    }
+};
+```
+
+#### [8. 字符串转换整数 (atoi)](https://leetcode-cn.com/problems/string-to-integer-atoi/)
+
+```cpp
+class Solution
+{
+public:
+    int myAtoi(string str)
+    {
+        int flag = 1;
+        int res = 0;
+        int idx = 0;
+        int len = str.length();
+        while (str[idx] == ' ')
+        {
+            idx++;
+        }
+        if (str[idx] == '-')
+            flag = -1;
+        if(str[idx] == '-' || str[idx] == '+')
+            idx++;
+        while (idx < len && isdigit(str[idx]))
+        {
+            int tmp = str[idx] - '0';
+            if (res > INT_MAX / 10 || (res == INT_MAX / 10 && tmp > 7)) { 
+                return flag > 0 ? INT_MAX : INT_MIN;
+            }
+            res = res * 10 + tmp;
+            idx++;
+        }
+        return flag * res;
+    }
+};
+```
+
+#### [9. 回文数](https://leetcode-cn.com/problems/palindrome-number/)
+
+思路：
+
+* 小于0的都不是回文数，能被10整除（0除外）都不是回文数，0到9都是回文数
+* 计算后半段翻转后的数字，若与前半段相等（数的长度为偶数），或者是前半段的数的10倍（数的长度为奇数），则返回true；
+
+```cpp
+class Solution {
+public:
+    bool isPalindrome(int x) {
+        if (x < 0 || (x % 10 == 0 && x != 0))
+            return false;
+        if( x > 0 && x < 9)
+            return true;
+        int reversedNum = 0;
+        while (x  > reversedNum)
+        {
+            reversedNum = reversedNum * 10 + x % 10;
+            x /= 10;
+        }
+        return x == reversedNum || x == reversedNum / 10;
+    }
+};
+```
+
