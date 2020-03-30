@@ -686,3 +686,150 @@ void insertSort(vector<int>& v){
 }
 ```
 
+折半插入排序：使用折半查找加快插入！（只适用于顺序表）
+
+### 希尔排序
+
+整个序列分割成若干个子序列，子序列内部用插排
+
+```python
+def shellSort(arr):
+    n = len(arr)
+    gap = n // 2
+    while gap > 0:
+        for i in range(gap):
+            gapInsertionSort(arr, i, gap)
+        gap = gap // 2
+	return arr
+
+def gapInsertionSort(arr, start, gap):
+    for i in range(start + gap, len(arr), gap):
+        position = i
+        currentval = arr[i]
+        while position > start and arr[position - gap] > currentval:
+            arr[position] = arr[position - gap]
+            position = position - gap
+        arr[position] = currentval
+```
+
+### 冒泡排序
+
+一趟冒泡：从前往后，两两比较，若逆序则交换。
+
+```python
+def bubbleSort(arr):
+    n = len(arr)
+    for i in range(n-1, 0, -1):
+        for j in range(0, i):
+            if arr[j] > arr[j+1]:
+                arr[j] ,arr[j+1] = arr[j+1], arr[j]
+	return arr
+```
+
+### 快速排序
+
+选择一个中枢，前面的数都小于中枢，而后面的数都大于中枢；
+
+```cpp
+template<typename T>
+void quicksort(T data[], int first, int last)
+{
+    int lower = first + 1;
+    int upper = last;
+    swap(data[first], data[(first + last) / 2]);
+    T bound = data[first];
+    while (lower <= upper)
+    {
+        while (data[lower] < bound)
+            lower++;
+        while (data[upper] > bound)
+            upper--;
+        if (lower < upper)
+            swap(data[lower++], data[upper--]);
+        else lower++;
+    }
+    swap(data[upper], data[first]);
+    if (first < upper - 1)
+        quicksort(data, first, upper - 1);
+    if (upper + 1 < last)
+        quicksort(data, upper + 1, last);
+}
+```
+
+### 选择排序
+
+每次选择未排好序的序列中最小的放在已排好的尾端
+
+```python
+def selectionSort(arr):
+    n = len(arr)
+    for i in range(n-1):
+        minIdx = i
+        for j in range(i+1， n):
+            if arr[j] < arr[minIdx]:
+                minIdx = j
+		arr[i], arr[minIdx] = arr[minIdx], arr[i]
+	return arr
+```
+
+### 堆排序
+
+利用堆的性质：
+
+1. 根小于左右子节点（小根堆）
+2. 根大于左右子节点（大根堆）
+
+### 归并排序
+
+视作n个有序的子序列，长度为1（1个肯定有序），然后两两归并；
+
+```cpp
+void MergeSort(int * const begin, int * const end) {
+    if (begin + 1 >= end)	return ;
+    int m = (end - begin) / 2;
+    MergeSort(begin, begin + m);
+    MergeSort(begin + m, end);
+    Merge(begin, begin + m, end);
+}
+void Merge(int * const first, int * const mid, int * const last) {
+    vector<int> left(first, mid);
+    vector<int> right(mid, last);
+    int i = 0, j = 0, k = 0;
+    while (i != left.size() && j != right.size()) {
+        if (left[i] <= right[j]) {
+            *(first + k) = left[i++];
+        } else {
+            *(first + k) = right[j++];
+        }
+        ++k;
+    }
+    while (i != left.size()) {
+        *(first + k) = left[i++];
+        ++k;
+    }
+    while (j != right.size()) {
+        *(first + k) = right[j++];
+        ++k;
+    }
+}
+```
+
+### 基数排序
+
+从个位数开始大小排序
+
+### 综合
+
+| 排序算法 | 平均时间复杂度 | 最好情况        | 最坏情况        | 空间复杂度  | 排序方式  | 稳定性 |
+| -------- | -------------- | --------------- | --------------- | ----------- | --------- | ------ |
+| 冒泡排序 | $O(n^2 )$      | $O(n)$          | $O(n^2)$        | $O(1)$      | In-place  | 稳定   |
+| 选择排序 | $O(n^2)$       | $O(n^2)$        | $O(n^2)$        | $O(1)$      | In-place  | 不稳定 |
+| 插入排序 | $O(n^2)$       | $O(n)$          | $O(n^2)$        | $O(1)$      | In-place  | 稳定   |
+| 希尔排序 | $O(nlog \ n)$  | $O(nlog^2 \ n)$ | $O(nlog^2 \ n)$ | $O(1)$      | In-place  | 不稳定 |
+| 归并排序 | $O(nlog \ n)$  | $O(nlog \ n)$   | $O(nlog \ n)$   | $O(n)$      | Out-place | 稳定   |
+| 快速排序 | $O(nlog \ n)$  | $O(nlog \ n)$   | $O(n^2)$        | $O(log\ n)$ | In-place  | 不稳定 |
+| 堆排序   | $O(nlog \ n)$  | $O(nlog \ n)$   | $O(nlog \ n)$   | $O(1)$      | In-place  | 不稳定 |
+| 计数排序 | $O(n + k)$     | $O(n + k)$      | $O(n + k)$      | $O(k)$      | Out-place | 稳定   |
+| 桶排序   | $O(n + k)$     | $O(n + k)$      | $O(n^2)$        | $O(n + k)$  | Out-place | 稳定   |
+| 基数排序 | $O(n\cdot k)$  | $O(n \cdot k)$  | $O(n \cdot k)$  | $O(n + k)$  | Out-place | 稳定   |
+
