@@ -284,3 +284,216 @@ public:
 };
 ```
 
+#### [10. 正则表达式匹配](https://leetcode-cn.com/problems/regular-expression-matching/)
+
+思路：
+
+* 递归思路
+  * 首先当p为空的时候判断s是否为空，为空返回true，否则返回false；
+  * 先判断第一位置是否匹配：`(s[0] == p[0]) || (p[0] == '.')`，然后判断第二个位置是否为`*`，因为`*`能匹配零个或多个前面的那一个元素，因此存在两种情况：
+    1. `*`前元素被忽略，则递归判断`isMatch(s,p.substr(2))`
+    2. 不被忽略，则递归判断`(first_match && isMatch(s.substr(1), p))`
+  * 若第二个位置不是`*`则递归判断`first_match && isMatch(s.substr(1), p.substr(1))`;
+
+```cpp
+class Solution {
+public:
+    bool isMatch(string s, string p) {
+        if(p.empty())
+            return s.empty();
+        bool first_match = (s[0] == p[0]) || (p[0] == '.'); 
+        if(p.size() >= 2 && p[1] == '*')
+        {
+            if(s.empty())
+                return isMatch(s, p.substr(2));
+            else
+                return isMatch(s,p.substr(2)) || (first_match && isMatch(s.substr(1), p));
+            
+        }
+        else
+        {
+            if(s.empty())
+                return false;
+            else
+                return first_match && isMatch(s.substr(1), p.substr(1));
+        }
+        
+    }
+};
+```
+
+#### [11. 盛最多水的容器](https://leetcode-cn.com/problems/container-with-most-water/)
+
+思路：
+
+1. 暴力法：直接找出线段的组合，找出最大值，时间复杂度$O(n^2)$
+
+2. 双指针法：
+
+   * 因为形成的面积总是受限于最短的那个，而且距离越远面积越大，所有设置左右指针，一个放在开始，一个置于末尾，每一步更新最大面积，并且使较短的向较长的线段那端移动；
+
+   ```cpp
+   class Solution {
+   public:
+       int maxArea(vector<int>& height) {
+           int maxarea = 0;
+           int l = 0, r = height.size() -1;
+           while (l < r)
+           {
+               maxarea = max(maxarea , min(height[l], height[r]) * (r - l));
+               if (height[l] < height[r])
+                   l++;
+               else
+                   r--;
+           }
+           return maxarea;
+       }
+   };
+   ```
+
+#### [12. 整数转罗马数字](https://leetcode-cn.com/problems/integer-to-roman/)
+
+思路：
+
+* 直接映射
+
+  ```cpp
+  class Solution {
+  public:
+      const vector<int> val = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+      const vector<string> dic = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+  
+      string intToRoman(int num) {
+          string res;
+          int i = 0;
+          while (num > 0 && i < dic.size())
+          {
+              if(num >= val[i])
+              {
+                  res += dic[i];
+                  num -= val[i];
+              }
+              else
+                  i++;
+          }
+          return res;
+      }
+  };
+  ```
+
+#### [13. 罗马数字转整数](https://leetcode-cn.com/problems/roman-to-integer/)
+
+```cpp
+class Solution {
+public:
+    unordered_map<string, int> mp = {{"I", 1}, {"IV", 4}, {"V", 5}, {"IX", 9}, {"X", 10}, {"XL", 40}, {"L", 50}, {"XC", 90}, {"C", 100}, {"CD", 400}, {"D", 500}, {"CM", 900}, {"M", 1000}};
+    int romanToInt(string s) {
+        int res = 0;
+        for (int i = 0; i < s.size(); i++)
+        {
+            if(i < s.size() - 1 && mp.count(s.substr(i,2)))
+            {
+                res += mp[s.substr(i,2)];
+                i++;
+            }
+            else
+            {
+                res += mp[s.substr(i,1)];
+            }
+        }
+        return res;
+    }
+};
+```
+
+#### [14. 最长公共前缀](https://leetcode-cn.com/problems/longest-common-prefix/)
+
+思路：
+
+* 因为为最长公共前缀，则一定存在于第一个字符内，因此设第一个字符为prefix
+* 然后遍历整个字符数组，若当前字符找不到prefix，则prefix循环减少一位，直到当前字符找到prefix；
+
+```cpp
+class Solution
+{
+public:
+    string longestCommonPrefix(vector<string> &strs)
+    {
+        if (strs.size() == 0)
+            return "";
+        string prefix = strs[0];
+        for (int i = 1; i < strs.size(); i++)
+        {
+            while (strs[i].find(prefix) != 0)
+            {
+                if (prefix == "")
+                    return "";
+                prefix = prefix.substr(0, prefix.length() - 1);
+            }
+        }
+        return prefix;
+    }
+};
+```
+
+#### [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
+
+思路：
+
+* 将数组排序（方便后面用二分查找）
+* 将问题转换为查找$nums[i] + nums[j] = - nums[k]$的问题，按照二数之和完成即可；注意去重；
+
+```cpp
+class Solution
+{
+public:
+    vector<vector<int>> threeSum(vector<int> &nums)
+    {
+        vector<vector<int>> res;
+        if (nums.size() < 3)
+            return res;
+        sort(nums.begin(), nums.end());
+        for (vector<int>::iterator it = nums.begin(); it != nums.end() - 2;)
+        {
+            int tmp = *it;
+            if (tmp > 0)
+                break;
+            int target = 0 - tmp;
+            vector<int>::iterator left = it + 1;
+            vector<int>::iterator right = nums.end() - 1;
+            while (left < right)
+            {
+                if (*right < 0)
+                    break;
+                if (*left + *right < target)
+                {
+                    int v = *left;
+                    while (left != right && *left == v)
+                        left++;
+                }
+                else if (*left + *right > target)
+                {
+                    int v = *right;
+                    while (left != right && *right == v)
+                        right--;
+                }
+                else
+                {
+                    vector<int> tmp_res{tmp, *left, *right};
+                    res.push_back(tmp_res);
+                    int v = *left;
+                    while (left != right && *left == v)
+                        left++;
+                    v = *right;
+                    while (left != right && *right == v)
+                        right--;
+                }
+            }
+            while (it != nums.end() - 2 && *it == tmp)
+                it++;
+        }
+        return res;
+    }
+};
+```
+
