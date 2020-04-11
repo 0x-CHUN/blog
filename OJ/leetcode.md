@@ -59,7 +59,7 @@ public:
 };
 ```
 
-#### [3. 无重复字符的最长子串](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/)
+## [3. 无重复字符的最长子串](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/)
 
 思路：用一个数组映射每个字符最后出现的位置，设置一个变量left为当前字符的最后出现的位置，然后遍历整个字符，先将left赋值为当前字符最后出现的位置（默认为-1，便于计算距离），然后更新映射的数组里的值，然后更新无重复字符的子串的长度为max(之前的无重复字符的子串长度，当前位置-当前字符最后出现的位置)；
 
@@ -81,7 +81,7 @@ public:
 };
 ```
 
-#### [4. 寻找两个有序数组的中位数](https://leetcode-cn.com/problems/median-of-two-sorted-arrays/)
+## [4. 寻找两个有序数组的中位数](https://leetcode-cn.com/problems/median-of-two-sorted-arrays/)
 
 思路：因为为有序数组，且要求的时间复杂度为$O(log(m+n))$，则一般为二分查找；
 
@@ -120,7 +120,7 @@ public:
 };
 ```
 
-#### [5. 最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
+## [5. 最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
 
 思路：动态规划
 
@@ -169,7 +169,7 @@ public:
 };
 ```
 
-#### [6. Z 字形变换](https://leetcode-cn.com/problems/zigzag-conversion/)
+## [6. Z 字形变换](https://leetcode-cn.com/problems/zigzag-conversion/)
 
 思路：按照行读取，一个小勾为一个单元，规律如下：
 
@@ -200,7 +200,7 @@ public:
 };
 ```
 
-#### [7. 整数反转](https://leetcode-cn.com/problems/reverse-integer/)
+## [7. 整数反转](https://leetcode-cn.com/problems/reverse-integer/)
 
 思路：注意溢出
 
@@ -224,7 +224,7 @@ public:
 };
 ```
 
-#### [8. 字符串转换整数 (atoi)](https://leetcode-cn.com/problems/string-to-integer-atoi/)
+## [8. 字符串转换整数 (atoi)](https://leetcode-cn.com/problems/string-to-integer-atoi/)
 
 ```cpp
 class Solution
@@ -258,7 +258,7 @@ public:
 };
 ```
 
-#### [9. 回文数](https://leetcode-cn.com/problems/palindrome-number/)
+## [9. 回文数](https://leetcode-cn.com/problems/palindrome-number/)
 
 思路：
 
@@ -284,7 +284,7 @@ public:
 };
 ```
 
-#### [10. 正则表达式匹配](https://leetcode-cn.com/problems/regular-expression-matching/)
+## [10. 正则表达式匹配](https://leetcode-cn.com/problems/regular-expression-matching/)
 
 思路：
 
@@ -322,7 +322,7 @@ public:
 };
 ```
 
-#### [11. 盛最多水的容器](https://leetcode-cn.com/problems/container-with-most-water/)
+## [11. 盛最多水的容器](https://leetcode-cn.com/problems/container-with-most-water/)
 
 思路：
 
@@ -351,7 +351,7 @@ public:
    };
    ```
 
-#### [12. 整数转罗马数字](https://leetcode-cn.com/problems/integer-to-roman/)
+## [12. 整数转罗马数字](https://leetcode-cn.com/problems/integer-to-roman/)
 
 思路：
 
@@ -381,7 +381,7 @@ public:
   };
   ```
 
-#### [13. 罗马数字转整数](https://leetcode-cn.com/problems/roman-to-integer/)
+## [13. 罗马数字转整数](https://leetcode-cn.com/problems/roman-to-integer/)
 
 ```cpp
 class Solution {
@@ -406,7 +406,7 @@ public:
 };
 ```
 
-#### [14. 最长公共前缀](https://leetcode-cn.com/problems/longest-common-prefix/)
+## [14. 最长公共前缀](https://leetcode-cn.com/problems/longest-common-prefix/)
 
 思路：
 
@@ -436,7 +436,7 @@ public:
 };
 ```
 
-#### [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
+## [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
 
 思路：
 
@@ -493,6 +493,222 @@ public:
                 it++;
         }
         return res;
+    }
+};
+```
+
+## [16. 最接近的三数之和](https://leetcode-cn.com/problems/3sum-closest/)
+
+思路：
+
+* 与三数之和一样先排序，然后利用二分找最接近的
+
+  ```cpp
+  class Solution
+  {
+  public:
+      int threeSumClosest(vector<int> &nums, int target)
+      {
+          if (nums.size() < 3)
+              return 0;
+          sort(nums.begin(), nums.end());
+          int delta = 0x7fffffff, ans, sum;
+          for (int i = 0; i < nums.size() - 2; i++)
+          {
+              int low = i + 1, high = nums.size() - 1;
+              while (low < high)
+              {
+                  sum = nums[i] + nums[low] + nums[high];
+                  if (sum == target)
+                      return sum;
+                  if (sum < target)
+                  {
+                      if (target - sum < delta)
+                      {
+                          delta = target - sum;
+                          ans = sum;
+                      }
+                      low++;
+                  }
+                  if(sum > target)
+                  {
+                      if(sum - target < delta)
+                      {
+                          delta = sum -target;
+                          ans = sum;
+                      }
+                      high--;
+                  }
+              }
+          }
+          return ans;
+      }
+  };
+  ```
+
+## [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
+
+思路：
+
+* 利用隐射将键盘与对应的数字对应
+
+* 利用回溯法获取组合方式
+
+  ```cpp
+  class Solution
+  {
+  public:
+      string state;
+      vector<string> ans;
+      string mp[8] = {"abc", "def", "ghi", "jkl", "mno", "pqrs", "tuv", "wxyz"};
+      void dfs(int pos, const string &digits)
+      {
+          if (pos == state.size())
+          {
+              ans.push_back(state);
+              return;
+          }
+          int idx = digits[pos] - '2';
+          for (auto c : mp[idx])
+          {
+              state[pos] = c;
+              dfs(pos + 1, digits);
+          }
+      }
+      vector<string> letterCombinations(string digits)
+      {
+          if (digits.empty())
+          {
+              return {};
+          }
+          state.resize(digits.size());
+          dfs(0, digits);
+          return ans;
+      }
+  };
+  ```
+
+## [18. 四数之和](https://leetcode-cn.com/problems/4sum/)
+
+思路：
+
+* 利用二重循环将四数之和降为二数之和，注意去重；
+
+```cpp
+class Solution
+{
+public:
+    vector<vector<int>> fourSum(vector<int> &nums, int target)
+    {
+        sort(nums.begin(), nums.end());
+        vector<vector<int>> result;
+        int size = nums.size();
+        for (int a = 0; a < size - 3; ++a)
+        {
+            if (a > 0 && nums[a] == nums[a - 1])
+                continue;
+            for (int b = a + 1; b < size - 2; ++b) 
+            {
+                if (b > a + 1 && nums[b] == nums[b - 1])
+                    continue;
+                int c = b + 1, d = size - 1;
+                while (c < d)
+                {
+                    int sum = nums[a] + nums[b] + nums[c] + nums[d];
+                    if (sum < target)
+                        while (c < d && nums[c] == nums[++c]);
+                    else if (sum > target)
+                        while (c < d && nums[d] == nums[--d]);
+                    else
+                    {
+                        result.push_back(vector<int>{nums[a], nums[b], nums[c], nums[d]});
+                        while (c < d && nums[c] == nums[++c]);
+                        while (c < d && nums[d] == nums[--d]);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+};
+```
+
+## [19. 删除链表的倒数第N个节点](https://leetcode-cn.com/problems/remove-nth-node-from-end-of-list/)
+
+思路：
+
+* 倒数第N个节点可以先让一个快指针走N步，然后指向头部的慢指针与快指针同步移动，直到快指针指向null；此时慢指针指向倒数第N个节点，然后删除即可；
+
+  ```cpp
+  class Solution
+  {
+  public:
+      ListNode *removeNthFromEnd(ListNode *head, int n)
+      {
+          ListNode *dummyHead = new ListNode(0);// 便于处理
+          dummyHead->next = head;
+          ListNode *p = dummyHead;// 快指针
+          ListNode *q = dummyHead;// 慢指针
+          for (int i = 0; i < n + 1; i++)
+          {
+              p = p->next;
+          }
+          while (p != nullptr)
+          {
+              p = p->next;
+              q = q->next;
+          }
+          ListNode *delNode = q->next;
+          q->next = delNode->next;
+          delete delNode;
+          ListNode *res = dummyHead->next;
+          delete dummyHead;
+          return res;
+      }
+  };
+  ```
+
+## [20. 有效的括号](https://leetcode-cn.com/problems/valid-parentheses/)
+
+思路：
+
+* 利用栈，遇到开括号则入栈，闭括号则出栈，看是否匹配，若不能出栈则字符串无效；
+* 当遍历完后，判断栈是否为空；
+
+```cpp
+class Solution
+{
+public:
+    bool isValid(string s)
+    {
+        if (s.empty())
+            return true;
+        if (s.length() % 2 != 0)
+            return false;
+        stack<char> st;
+        map<char, char> mp;
+        mp.insert(map<char, char>::value_type(')', '('));
+        mp.insert(map<char, char>::value_type(']', '['));
+        mp.insert(map<char, char>::value_type('}', '{'));
+        for (int i = 0; i < s.length(); i++)
+        {
+            if (s[i] == '(' || s[i] == '[' || s[i] == '{')
+                st.push(s[i]);
+            else
+            {
+                if (st.empty())
+                    return false;
+                if (mp[s[i]] == st.top())
+                {
+                    st.pop();
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        return st.empty();
     }
 };
 ```
