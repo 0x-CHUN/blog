@@ -713,3 +713,252 @@ public:
 };
 ```
 
+## [21. 合并两个有序链表](https://leetcode-cn.com/problems/merge-two-sorted-lists/)
+
+思路：
+
+* 最主要的是新建一个虚结点，可以减少判断。
+
+```cpp
+class Solution
+{
+public:
+    ListNode *mergeTwoLists(ListNode *l1, ListNode *l2)
+    {
+        if (l1 == nullptr)
+            return l2;
+        if (l2 == nullptr)
+            return l1;
+        ListNode *dummyHead = new ListNode(0);
+        ListNode *p = dummyHead;
+        while (l1 != nullptr && l2 != nullptr)
+        {
+            if (l1->val <= l2->val)
+            {
+                p->next = l1;
+                l1 = l1->next;
+            }
+            else
+            {
+                p->next = l2;
+                l2 = l2->next;
+            }
+            p = p->next;
+        }
+        if (l1 == nullptr)
+            p->next = l2;
+        else
+            p->next = l1;
+        return dummyHead->next;
+    }
+};
+```
+
+## [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
+
+思路：
+
+* 回溯法，经典的回溯法的题。
+
+```cpp
+class Solution
+{
+public:
+    void backtrace(vector<string> &res, string &s, int left, int right, int lens)
+    {
+        if (s.length() == lens * 2)
+        {
+            res.push_back(s);
+            return;
+        }
+        if (left < lens)
+        {
+            s += "(";
+            backtrace(res, s, left + 1, right, lens);
+            s.pop_back();
+        }
+        if (right < left)
+        {
+            s += ")";
+            backtrace(res, s, left, right + 1, lens);
+            s.pop_back();
+        }
+    }
+    vector<string> generateParenthesis(int n)
+    {
+        vector<string> res;
+        string s = "";
+        backtrace(res, s, 0, 0, n);
+        return res;
+    }
+};
+```
+
+## [23. 合并K个排序链表](https://leetcode-cn.com/problems/merge-k-sorted-lists/)
+
+思路：
+
+* 首先可以实现合并2个排序链表
+* 递归实现合并K个排序链表，设链表p为左边的$\frac{K}{2}$合并后的链表，链表q为右边的$\frac{K}{2}$合并后的链表，然后合并链表p、q；
+
+```cpp
+class Solution
+{
+public:
+    ListNode *mergeTwoLists(ListNode *l1, ListNode *l2)
+    {
+        if (l1 == nullptr)
+            return l2;
+        if (l2 == nullptr)
+            return l1;
+        ListNode *dummyHead = new ListNode(0);
+        ListNode *p = dummyHead;
+        while (l1 != nullptr && l2 != nullptr)
+        {
+            if (l1->val <= l2->val)
+            {
+                p->next = l1;
+                l1 = l1->next;
+            }
+            else
+            {
+                p->next = l2;
+                l2 = l2->next;
+            }
+            p = p->next;
+        }
+        if (l1 == nullptr)
+            p->next = l2;
+        else
+            p->next = l1;
+        return dummyHead->next;
+    }
+    ListNode *mergeKLists(vector<ListNode *> &lists)
+    {
+        if (lists.empty())
+        {
+            return nullptr;
+        }
+        if (lists.size() == 1)
+        {
+            return lists[0];
+        }
+        if (lists.size() == 2)
+        {
+            return mergeTwoLists(lists[0], lists[1]);
+        }
+        int mid = lists.size() / 2;
+        vector<ListNode *> left;
+        vector<ListNode *> right;
+        for (int i = 0; i < mid; i++)
+        {
+            left.push_back(lists[i]);
+        }
+        for (int i = mid; i < lists.size(); i++)
+        {
+            right.push_back(lists[i]);
+        }
+        ListNode *l1 = mergeKLists(left);
+        ListNode *l2 = mergeKLists(right);
+        return mergeTwoLists(l1, l2);
+    }
+};
+```
+
+## [24. 两两交换链表中的节点](https://leetcode-cn.com/problems/swap-nodes-in-pairs/)
+
+思路一：
+
+* 分为两类，即奇数的节点和偶数的节点，分别交换即可。
+* 设置一个prev的节点指针指向之前的节点
+
+```cpp
+class Solution
+{
+public:
+    ListNode *swapPairs(ListNode *head)
+    {
+        if (head == nullptr || head->next == nullptr)
+        {
+            return head;
+        }
+        ListNode *dummy = new ListNode(-1);
+        dummy->next = head;
+        ListNode *prev = dummy;
+        ListNode *p, *q;
+        while (head != nullptr && head->next != nullptr)
+        {
+            p = head;
+            q = head->next;
+            prev->next = q;
+            p->next = q->next;
+            q->next = p;
+            prev = p;
+            head = p->next;
+        }
+        return dummy->next;
+    }
+};
+```
+
+思路二：
+
+* 递归实现
+* 从链表的头节点 head 开始递归。每次递归都负责交换一对节点。由p和q表示要交换的两个节点。
+* 下一次递归则是传递的是下一对需要交换的节点。若链表中还有节点，则继续递归。交换了两个节点以后，返回 q，因为它是交换后的新头。
+* 在所有节点交换完成以后，返回交换后的头，实际上是原始链表的第二个节点。
+
+```cpp
+class Solution {
+public:
+    ListNode* swapPairs(ListNode* head) {
+        if(head == nullptr || head->next == nullptr)
+        {
+            return head;
+        }
+        ListNode* p = head;
+        ListNode* q = head->next;
+        p->next = swapPairs(q->next);
+        q->next = p;
+        return q;
+    }
+};
+```
+
+## [25. K 个一组翻转链表](https://leetcode-cn.com/problems/reverse-nodes-in-k-group/)
+
+思路：
+
+* 直接递归每K个节点翻转
+
+```cpp
+class Solution
+{
+public:
+    ListNode *reverseKGroup(ListNode *head, int k)
+    {
+        int n = 0;
+        ListNode *p = head;
+        while (p != nullptr)
+        {
+            if (++n >= k)
+                break;
+            p = p->next;
+        }
+        if (n < k)
+            return head;
+        ListNode *prev = nullptr;
+        ListNode *cur = head;
+        for (int i = 0; i < k; ++i)
+        {
+            ListNode *node = cur->next;
+            cur->next = prev;
+            prev = cur;
+            cur = node;
+        }
+        head->next = reverseKGroup(cur, k);
+        return prev;
+    }
+};
+```
+
