@@ -6,7 +6,8 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="//unpkg.com/docsify/themes/vue.css">
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"/>
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.css">
+  <link rel="stylesheet" href="//unpkg.com/mermaid/dist/mermaid.min.css">
+  <script src="//unpkg.com/mermaid/dist/mermaid.min.js"></script>
 </head>
 <body>
   <nav>
@@ -14,13 +15,9 @@
     <a href="https://github.com/xie-chun-hui">GITHUB</a>
 	<a href="https://www.douban.com/people/79107559/">豆瓣</a>
   </nav>
-    <div id="app">加载中</div>
+  <div id="app">Loading......</div>
   <script>
-    var num = 0;
-    mermaid.initialize({ startOnLoad: false });
     window.$docsify = {
-      loadSidebar: true,
-      subMaxLevel: 2,
       markdown: {
         renderer: {
           code: function(code, lang) {
@@ -28,12 +25,16 @@
               return (
                 '<div class="mermaid">' + mermaid.render('mermaid-svg-' + num++, code) + "</div>"
                 );
-              }
-              return this.origin.code.apply(this, arguments);
-            }
+                }
+                return this.origin.code.apply(this, arguments);
           }
         }
+      },
+      loadSidebar: true,
+      subMaxLevel: 2
     }
+    var num = 0;
+    mermaid.initialize({ logLevel:0, startOnLoad: false, themeCSS:'.label { font-family: Source Sans Pro,Helvetica Neue,Arial,sans-serif; }' });
   </script>
   <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
   <script src="//unpkg.com/docsify-copy-code"></script>
@@ -43,6 +44,5 @@
   <script src="//unpkg.com/prismjs/components/prism-go.js"></script>
   <script src="//unpkg.com/prismjs/components/prism-java.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify-katex@latest/dist/docsify-katex.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 </body>
 </html>
