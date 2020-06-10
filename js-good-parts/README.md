@@ -1,0 +1,12 @@
+# JavaScript语言精粹读书笔记
+
+* [精华](js-good-parts/ch1.md)
+* [语法](js-good-parts/ch2.md)
+* [对象](js-good-parts/ch3.md)
+* [函数](js-good-parts/ch4.md)
+* [继承](js-good-parts/ch5.md)
+* [数组](js-good-parts/ch6.md)
+* [正则表达式](js-good-parts/ch7.md)
+* [方法](js-good-parts/ch8.md)
+* [代码风格](js-good-parts/ch9.md)
+* [优美的特性](js-good-parts/ch10.md)

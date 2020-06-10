@@ -10,3 +10,4 @@
 * [SICP](sicp/)
 * [CSnotes](csnotes/)
 * [分布式系统6.824](6.824/)
+* [JavaScript语言精粹](js-good-parts/)
