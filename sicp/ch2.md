@@ -312,5 +312,576 @@ accumulate的实现：
 
 把程序表示为针对序列的一系列操作，得到的模块更规范。模块化设计还能支持重用，用模块拼装的方式可以构造出许多程序。
 
-### 一个图形语言
+## 符号数据
+
+### 引号
+
+Scheme用类似形式描述符号对：表达式之前加单引号，表示这个表达式自身；
+
+```scheme
+(car '(a b c)) ; a
+(cdr '(a b c)) ; (b c)
+(define a 1)
+(define b 2)
+(list a b) ; (1 2)
+(list 'a 'b) ; (a b)
+(list 'a b) ; (a 2)
+```
+
+基本谓词**eq？**判断给它的两个参数是否为同一个符号：
+
+```scheme
+(define (memq item x)
+  (cond ((null? x) false)
+        ((eq? item (car x)) x)
+        (else (memq (item (cdr x))))))
+```
+
+### 符号求导
+
+$$
+\frac{dc}{dx}=c \\
+\frac{dx}{dx}=0\\
+\frac{d(u+v)}{dx}=\frac{du}{dx}+\frac{dv}{dx}\\
+\frac{d(uv)}{dx}=u\frac{dv}{dx}+v\frac{du}{dx}
+$$
+
+假定有如下构造函数、选择函数和谓词：
+
+```scheme
+(variable? e) ; e 是个变量?
+(same-variable? v1 v2) ; v1 和 和 v2 是同一个变量?
+(sum? e) ; e 是和式?
+(addend e) ; 和式 e 的被加数.
+(augend e) ; 和式 e 的加数.
+(make-sum a1 a2) ; 构造 a1 和 和 a2 的和式.
+(product? e) ; e 是乘式?
+(multiplier e) ; 乘式 e 的被乘数.
+(multiplicand e) ; 乘式 e 的乘数.
+(make-product m1 m2) ; 构造 m1 和 和 m2 的乘式.
+```
+
+基于这些过程，求导的过程：
+
+```scheme
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp)
+         (if (same-variable? exp var) 1 0))
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)
+                   (deriv (augend exp) var)))
+        ((prodcut? exp)
+         (make-sum (make-product (multiplier exp)
+                                 (deriv (multiplicand exp) var))
+                   (make-product (multiplicand exp)
+                                 (deriv (multiplier exp) var))))
+        (else (error "unkonwn expression type -- DERIV" exp))))
+```
+
+实现构造函数、选择函数和谓词：
+
+```scheme
+(define (variable? x)(symbol? x))
+(define (same-variable? v1 v2)
+  (and (variable? v1) (variable? v2)(eq? v1 v2)))
+(define (make-sum a1 a2) (list '+ a1 a2))
+(define (make-product m1 m2) (list '* m1 m2))
+(define (sum? x)(and (pair? x) (eq? (car x) '+)))
+(define (product? x)(and (pair? x) (eq? (car x) '*)))
+(define (addend s)(cadr s))
+(define (augend s)(caddr s))
+(define (multiplier x)(cadr x))
+(define (multiplicand x)(caddr x))
+```
+
+测试：
+
+```scheme
+(deriv '(* (* x y) (+ x 3)) 'x)
+; (+ (* (* x y) (+ 1 0)) (* (+ x 3) (+ (* x 0) (* y 1))))
+```
+
+实现化简功能，只需修改和式和乘式的构造函数：
+
+```scheme
+(define (=number? x y)
+  (and (number? x) (= x y))) 
+(define (make-sum a1 a2)
+  (cond ((=number? a1 0) a2)
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2) (+ a1 a2)))
+        (else (list '+ a1 a2))))
+(define (make-product m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        (else (list '* m1 m2))))
+```
+
+### 集合
+
+集合是一组对象的无序汇集；
+
+判断元素是否在集合中：
+
+```scheme
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((equal? x (car set)) true)
+        (else (element-of-set? x (cdr set)))))
+```
+
+时间复杂度为$O(n)$；
+
+加入元素：
+
+```scheme
+(define (adjoin-set x set)
+  (if (element-of-set? x set) set (cons x set)))
+```
+
+时间复杂度为$O(n)$；
+
+求交集：
+
+```scheme
+(define (intersection-set set1 set2)
+  (cond ((or (null? set1) (null? set2)) '())
+        ((element-of-set? (car set1) set2)
+         (cons (car set1) (intersection-set (cdr set1) set2)))
+        (else (intersection-set (cdr set1) set2))))
+```
+
+时间复杂度为$O(m * n)$；
+
+提高效率的一种可能是改变表示：考虑用排序的表表示集合，元素按上升序排列；
+
+```scheme
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+        ((= x (car set)) true)
+        ((< x (car set)) false)
+        (else (element-of-set? x (cdr set)))))
+
+(define (intersection-set set1 set2)
+  (if (or (null? set1) (null? set2))
+      '()
+      (let ((x1 (car set1)) (x2 (car set2)))
+        (cond ((= x1 x2)
+               (cons x1 (intersection-set (cdr set1) (cdr set2))))
+              ((< x1 x2) (intersection-set (cdr set1) set2))
+              ((< x2 x1) (intersection-set set1 (cdr set2)))))))
+```
+
+## 数据抽象的多重表示
+
+数据抽象可以使程序中的大部分描述与数据对象的具体表示无关;
+
+实现数据抽象的基本方法:
+
+* 用一组基本操作构筑起抽象屏障(构造函数，选择函数等)
+* 在屏障之外只通过这组基本操作使用数据抽象
+* 通过数据抽象可把大系统分解为一组更容易处理的较小的任务
+
+数据不一定有明确的表示方式，许多数据对象有多种合理的表示形式；
+
+数据导向的程序设计，是一种可用于实现通用型操作的威力强大而且方便易用的技术；
+
+### 复数的表示
+
+```mermaid
+graph BT
+	表结构额基本算术--极坐标表示/直角坐标表示-->
+	复数算术包--add/sub/mul/div-->
+	使用复数的程序
+```
+
+复数有两种基本表示方式：
+
+* 直角坐标
+  * 加法：$re(z_1+z_2)=re(z_1)+re(z_2)\ im(z_1+z_2) = im(z_1)+im(z_2)$
+* 极坐标
+  * 乘法：$mg(z_1\cdot z_2)=mg(z_1)\cdot mg(z_2) \ an(z_1\cdot z_2)=an(z_1)+an(z_2)$
+
+实现复数包时，用 实现复数包时，用4 个选择函数和2个构造函数屏蔽复数的具体表示：
+
+* 选择函数：**real-part, imag-part, magnitude, angle**
+* 构造函数：**make-from-real-imag ，make-from-mag-ang**
+
+所有运算都基于基本过程实现，其中的加减运算基于实部和虚部，乘除运算基于模和幅角：
+
+```scheme
+(define (add-complex z1 z2)
+  (make-from-real-imag (+ (real-part z1) (real-part z2))
+                       (+ (imag-part z1) (imag-part z2))))
+(define (sub-complex z1 z2)
+  (make-from-real-imag (- (real-part z1) (real-part z2))
+                       (- (imag-part z1) (imag-part z2))))
+(define (mul-complex z1 z2)
+  (make-from-mag-ang (* (magnitude z1) (magnitude z2))
+                     (+ (angle z1) (angle z2))))
+(define (div-complex z1 z2)
+  (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
+                     (- (angle z1) (angle z2))))
+```
+
+ 用序对表示复数，car和cdr分别表示其实部和虚部。基本过程：
+
+```scheme
+(define (real-part z) (car z))
+(define (imag-part z) (cdr z))
+(define (magnitude z)
+  (sqrt (+ (square (real-part z)) (square (imag-part z)))))
+(define (angle z) (atan (imag-part z) (real-part z)))
+(define (make-from-real-imag x y) (cons x y))
+(define (make-from-mag-ang r a) (cons (* r (cos a)) (* r (sin a))))
+```
+
+用序对表示复数，car 和 和 cdr 分别表示其模和幅角。基本过程：
+
+```scheme
+(define (real-part z) (* (magnitude z) (cos (angle z))))
+(define (imag-part z) (* (magnitude z) (sin (angle z))))
+(define (magnitude z) (car z))
+(define (angle z) (cdr z))
+(define (make-from-real-imag x y)
+  (cons (sqrt (+ (square x) (square y)))
+        (atan y x)))
+(define (make-from-mag-ang r a) (cons r a))
+```
+
+### 带标志数据
+
+数据抽象支持“最小允诺原则”：
+
+* 由于抽象屏障，实际表示形式的选择可以尽量延后
+* 系统设计具有最大的灵活性
+
+如果实际中有需要，在设计好构造函数和选择函数之后，还可决定同时使用多种不同表示方式，将表示方式的不确定性延续到运行时。
+
+现在考虑如何让一个复数系统里同时允许两种表示形式，为支持这种功能，选择过程要有办法识别不同表示，解决方法是为数据加标签：
+
+```scheme
+(define (attach-tag type-tag contents) (cons type-tag contents))
+(define (type-tag datum)
+  (if (pair? datum) (car datum)
+      (error "Bad tagged datum -- TYPE-TAG" datum)))
+(define (contents datum)
+  (if (pair? datum) (cdr datum)
+      (error "Bad tagged datum -- CONTENTS" datum)))
+```
+
+定义判断谓词：
+
+```scheme
+(define (rectangular? z) (eq? (type-tag z) 'rectangular))
+(define (polar? z) (eq? (type-tag z) 'polar))
+```
+
+ 直角坐标表示的复数的构造函数和选择函数：
+
+```scheme
+(define (real-part-rectangular z) (car z))
+(define (imag-part-rectangular z) (cdr z))
+(define (magnitude-rectangular z)
+  (sqrt (+ (square (real-part-rectangular z))
+           (square (imag-part-rectangular z)))))
+(define (angle-rectangular z)
+  (atan (imag-part-rectangular z)
+        (real-part-rectangular z)))
+(define (make-from-real-imag-rectangular x y)
+  (attach-tag 'rectangular (cons x y)))
+(define (make-from-mag-ang-rectangular r a)
+  (attach-tag 'rectangular
+              (cons (* r (cos a)) (* r (sin a)))))
+```
+
+极坐标表示的复数的构造函数和选择函数：
+
+```scheme
+(define (real-part-polar z)
+  (* (magnitude-polar z) (cos (angle-polar z))))
+(define (imag-part-polar z)
+  (* (magnitude-polar z) (sin (angle-polar z))))
+(define (magnitude-polar z) (car z))
+(define (angle-polar z) (cdr z))
+(define (make-from-real-imag-polar x y)
+  (attach-tag 'polar
+              (cons (sqrt (+ (square x) (square y)))
+                    (atan y x))))
+(define (make-from-mag-ang-polar r a)
+  (attach-tag 'polar (cons r a)))
+```
+
+通用型选择函数：
+
+```scheme
+(define (real-part z)
+  (cond ((rectangular? z) (real-part-rectangular (contents z)))
+        ((polar? z) (real-part-polar (contents z)))
+        (else (error "Unknown type -- REAL-PART" z))))
+(define (imag-part z)
+  (cond ((rectangular? z) (imag-part-rectangular (contents z)))
+        ((polar? z) (imag-part-polar (contents z)))
+        (else (error "Unknown type -- IMAG-PART" z))))
+(define (magnitude z)
+  (cond ((rectangular? z) (magnitude-rectangular (contents z)))
+        ((polar? z) (magnitude-polar (contents z)))
+        (else (error "Unknown type -- MAGNITUDE" z))))
+(define (angle z)
+  (cond ((rectangular? z) (angle-rectangular (contents z)))
+        ((polar? z) (angle-polar (contents z)))
+        (else (error "Unknown type -- ANGLE" z))))
+```
+
+构造函数：
+
+```scheme
+(define (make-from-real-imag x y)
+  (make-from-real-imag-rectangular x y))
+(define (make-from-mag-ang r a)
+  (make-from-mag-ang-polar r a))
+```
+
+### 数据导向的程序设计和可加性
+
+检查数据的类型，根据类型调用过程,称为基于类型的指派，这种技术在增强系统模块性方面很有用。本质就是根据数据的类型划分安排处理过程，分解系统功能。
+
+基于类型的指派有两个重要弱点：
+
+1. 每个通用型过程（如复数的选择函数）必须知道所有类型
+2. 不同类型的表示相互独立，通常分别独立定义
+
+这两个弱点说明该技术不具有可加性；
+
+针对不同类型的一批通用操作，有关信息可以用一个二维表格表示。
+
+对基于类型的指派技术，表格隐藏在通用型过程的代码里。数据导向的程序设计里显式表示和处理这种二维表格。
+
+假定有一个内部表格，其基本操作是put和get：
+
+* `put <op> <type>  <item>`：把一个项 **item**加入表格，使之与**op**和**type** 关联；
+* `(get <op> <type>)` ：取出表格中与**op**和**type**关联的项；
+
+```scheme
+; 直角坐标
+(define (install-rectangular-package)
+  ;; internal procedures
+  (define (real-part z) (car z))
+  (define (imag-part z) (cdr z))
+  (define (make-from-real-imag x y) (cons x y))
+  (define (magnitude z)
+    (sqrt (+ (square (real-part z)) (square (imag-part z)))))
+  (define (angle z) (atan (imag-part z) (real-part z)))
+  (define (make-from-mag-ang r a) (cons (* r (cos a)) (* r (sin a))))
+  (define (tag x) (attach-tag 'rectangular x))
+  (put 'real-part '(rectangular) real-part)
+  (put 'imag-part '(rectangular) imag-part)
+  (put 'magnitude '(rectangular) magnitude)
+  (put 'angle '(rectangular) angle)
+  (put 'make-from-real-imag 'rectangular
+       (lambda (x y) (tag (make-from-real-imag x y))))
+  (put 'make-from-mag-ang 'rectangular
+       (lambda (r a) (tag (make-from-mag-ang r a))))
+  'done)
+
+; 极坐标
+(define (install-polar-package)
+  ;; internal procedures
+  (define (magnitude z) (car z))
+  (define (angle z) (cdr z))
+  (define (make-from-mag-ang r a) (cons r a))
+  (define (real-part z) (* (magnitude z) (cos (angle z))))
+  (define (imag-part z) (* (magnitude z) (sin (angle z))))
+  (define (make-from-real-imag x y)
+    (cons (sqrt (+ (square x) (square y))) (atan y x)) )
+  (define (tag x) (attach-tag 'polar x))
+  (put 'real-part '(polar) real-part)
+  (put 'imag-part '(polar) imag-part)
+  (put 'magnitude '(polar) magnitude)
+  (put 'angle '(polar) angle)
+  (put 'make-from-real-imag 'polar
+       (lambda (x y) (tag (make-from-real-imag x y))))
+  (put 'make-from-mag-ang 'polar
+       (lambda (r a) (tag (make-from-mag-ang r a))))
+  'done)
+```
+
+把两类复数的过程都安装到表格里，就可以通过表格检索和使用了。
+
+复数算术运算的实现基础是一个通用选择过程，它基于参数得到操作名和类型标签，到表格里查找具体操作。
+
+```scheme
+(define (apply-generic op . args) ;; 任意多个参数 任意多个参数
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args)) ; 将 将 proc 应用于... (apply)
+          (error "No method for these types -- APPLY-GENERIC"
+                 (list op type-tags))))))
+```
+
+所有选择函数都基于上面的通用选择过程定义：
+
+```scheme
+(define (real-part z) (apply-generic 'real-part z))
+(define (imag-part z) (apply-generic 'imag-part z))
+(define (magnitude z) (apply-generic 'magnitude z))
+(define (angle z) (apply-generic 'angle z))
+```
+
+构造函数：
+
+```scheme
+(define (make-from-real-imag x y)
+  ((get 'make-from-real-imag 'rectangular) x y) )
+(define (make-from-mag-ang r a)
+  ((get 'make-from-mag-ang 'polar) r a) )
+```
+
+### 消息传递
+
+数据导向的程序设计，关键想法就是显式处理“ 类型- 操作”表格，在表格里存储程序里的所有通用操作。
+
+处理这个问题的另外两种方式：
+
+* 把操作定义得足够强大（是能理解类型的智能操作），它们能根据被处理的数据的类型决定采用的具体操作。
+* 定义足够聪明的“ 智能数据对象”，这种对象能根据送来的操作名决定自己要做的工作。
+
+下面介绍在 下面介绍在 Scheme 里应用后一技术，方法：用过程表示对象，这种过程接受操作名并完成所需的工作。
+
+```scheme
+(define (make-from-real-imag x y)
+  (lambda (op)
+    (cond ((eq? op 'real-part) x)
+          ((eq? op 'imag-part) y)
+          ((eq? op 'magnitude) (sqrt (+ (square x) (square y))))
+          ((eq? op 'angle) (atan y x))
+          (else
+           (error "Unknown op--MAKE-FROM-REAL-IMAG" op)))))
+```
+
+重新定义 apply-generic：
+
+```scheme
+; 把操作名送给相应数据对象 
+(define (apply-generic op arg) (arg op))
+```
+
+对象创建操作返回的过程就是apply-generic 调用的过程加入一种新类型时，需要定义生成该类数据对象的过程，这个新过程必须能接受与已有类型同样的操作。
+
+这种风格的程序设计称为消息传递；
+
+## 带有通用型操作的系统
+
+![image-20200616103104117](assets/image-20200616103104117.png)
+
+```scheme
+(define (add x y) (apply-generic 'add x y))
+(define (sub x y) (apply-generic 'sub x y))
+(define (mul x y) (apply-generic 'mul x y))
+(define (div x y) (apply-generic 'div x y))
+```
+
+常规Scheme 数加上标签 scheme-number。每个算术运算都有两个参数，检索关键码用(scheme-number scheme-number)：
+
+```scheme
+(define (install-scheme-number-package)
+  (define (tag x) (attach-tag 'scheme-number x))
+  (put 'add '(scheme-number scheme-number)
+       (lambda (x y) (tag (+ x y))))
+  (put 'sub '(scheme-number scheme-number)
+       (lambda (x y) (tag (- x y))))
+  (put 'mul '(scheme-number scheme-number)
+       (lambda (x y) (tag (* x y))))
+  (put 'div '(scheme-number scheme-number)
+       (lambda (x y) (tag (/ x y))))
+  (put 'make 'scheme-number (lambda (x) (tag x)))
+  'done)
+```
+
+创建带标志的常规数：
+
+```scheme
+(define (make-scheme-number n)
+  ((get 'make 'scheme-number) n))
+```
+
+有理数：
+
+```scheme
+(define (install-rational-package)
+  ;; internal procedures
+  (define (numer x) (car x))
+  (define (denom x) (cdr x))
+  (define (make-rat n d) (let ((g (gcd n d))) (cons (/ n g) (/ d g))))
+  (define (add-rat x y)
+    (make-rat (+ (* (numer x) (denom y))
+                 (* (numer y) (denom x)))
+              (* (denom x) (denom y))))
+  (define (sub-rat x y)
+    (make-rat (- (* (numer x) (denom y))
+                 (* (numer y) (denom x)))
+              (* (denom x) (denom y))))
+  (define (mul-rat x y)
+    (make-rat (* (numer x) (numer y))
+              (* (denom x) (denom y))))
+  (define (div-rat x y)
+    (make-rat (* (numer x) (denom y))
+              (* (denom x) (numer y))))
+  (define (tag x) (attach-tag 'rational x))
+  (put 'add '(rational rational)
+       (lambda (x y) (tag (add-rat x y))))
+  (put 'sub '(rational rational)
+       (lambda (x y) (tag (sub-rat x y))))
+  (put 'mul '(rational rational)
+       (lambda (x y) (tag (mul-rat x y))))
+  (put 'div '(rational rational)
+       (lambda (x y) (tag (div-rat x y))))
+  (put 'make 'rational (lambda (n d) (tag (make-rat n d))))
+  'done)
+(define (make-rational n d) ((get 'make 'rational) n d))
+```
+
+复数：
+
+```scheme
+(define (install-complex-package)
+  ;; imported procedures from rectangular and polar packages
+  (define (make-from-real-imag x y)
+    ((get 'make-from-real-imag 'rectangular) x y))
+  (define (make-from-mag-ang r a)
+    ((get 'make-from-mag-ang 'polar) r a))
+  (define (add-complex z1 z2)
+    (make-from-real-imag (+ (real-part z1) (real-part z2))
+                         (+ (imag-part z1) (imag-part z2))))
+  (define (sub-complex z1 z2)
+    (make-from-real-imag (- (real-part z1) (real-part z2))
+                         (- (imag-part z1) (imag-part z2))))
+  (define (mul-complex z1 z2)
+    (make-from-mag-ang (* (magnitude z1) (magnitude z2))
+                         (+ (angle z1) (angle z2))))
+  (define (div-complex z1 z2)
+    (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
+                       (- (angle z1) (angle z2))))
+  (define (tag z) (attach-tag 'complex z))
+  (put 'add '(complex complex)
+       (lambda (z1 z2) (tag (add-complex z1 z2))))
+  (put 'sub '(complex complex)
+       (lambda (z1 z2) (tag (sub-complex z1 z2))))
+   (put 'mul '(complex complex)
+       (lambda (z1 z2) (tag (mul-complex z1 z2))))
+   (put 'make-from-real-imag 'complex
+       (lambda (x y) (tag (make-from-real-imag x y))))
+    (put 'make-from-mag-ang 'complex
+       (lambda (r a) (tag (make-from-mag-ang r a))))
+  'done)
+
+(define (make-complex-from-real-imag x y)
+  ((get 'make-from-real-imag 'complex) x y))
+(define (make-complex-from-mag-ang r a)
+  ((get 'make-from-mag-ang 'complex) r a))
+```
 
