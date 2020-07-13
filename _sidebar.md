@@ -8,6 +8,6 @@
 * [OJ](OJ/)
 * [算法第四版](algs4/)
 * [SICP](sicp/)
-* [CSnotes](csnotes/)
+* [一些笔记](csnotes/)
 * [分布式系统6.824](6.824/)
 * [JavaScript语言精粹](js-good-parts/)

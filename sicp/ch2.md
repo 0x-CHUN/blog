@@ -885,3 +885,185 @@ graph BT
   ((get 'make-from-mag-ang 'complex) r a))
 ```
 
+### 不同类型数据的组合
+
+复杂的系统可能划分为许多不同抽象层次，对应的数据表示也可能包含多个层次。 系统的不同层次之间通过一组通用操作相互联系。这些通用操作基于数据的标签区分不同数据类别。为支持一个层次上通用操作，可以用一组数据标签。这使系统的层次性表现为数据的层次性。
+
+但是存在一个缺点：不同类型的数之间不能互操作。实际系统中的常见情况：一组类型相互之间有关系，需要做不同类型的数据之间的操作。
+
+要考虑实现跨类型操作，必须同时考虑两方面问题：
+
+* 扩充后的系统支持跨类型操作
+* 不能严重损害原有的模块分隔
+
+如要在算术系统里增加求复数与常规数之和的操作，可以用标签(complex scheme-number) 在表格里加一个过程：
+
+```scheme
+;; to be included in the complex package
+(define (add-complex-to-schemenum z x)
+  (make-from-real-imag (+ (real-part z) x)
+                       (imag-part z)))
+(put 'add '(complex scheme-number)
+     (lambda (z x) (tag (add-complex-to-schemenum z x))))
+```
+
+但是这样做很麻烦：n种类型m种操作就需要$m*n*(n-1)$个混合操作。
+
+**强制**：将一种类型的对象可看作另外一种类型的对象。
+
+例：常规 Scheme 数可以看成虚部为 0 的复数，它们与复数之间的运算可以转化为复数运算
+
+```scheme
+(define (scheme-number->complex n)
+  (make-complex-from-real-imag (contents n) 0))
+; 把这个操作安装到一个特殊的强制表格里（设对这个表格的操作过程是 put-coercion 和 和 get-coercion）
+(put-coercion 'scheme-number 'complex scheme-number->complex)
+```
+
+安装强制过程后，还需要修改 apply-generic，统一处理强制问题:
+
+```scheme
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))
+          (if (= (length args) 2)
+              (let ((type1 (car type-tags)) (type2 (cadr type-tags))
+                    (a1 (car args)) (a2 (cadr args)))
+                (let ((t1->t2 (get-coercion type1 type2))
+                      (t2->t1 (get-coercion type2 type1)))
+                  (cond (t1->t2 (apply-generic op (t1->t2 a1) a2))
+                        (t2->t1 (apply-generic op a1 (t2->t1 a2)))
+                        (else (error "No method for these types"
+                                     (list op type-tags))))))
+              (error "No method for these types"
+                     (list op type-tags)))))))
+```
+
+通过强制实现类型间互操作，每对类型只需要一个过程。简单强制模型要求各对类型之间有某种简单关系。
+
+算数系统：
+
+```mermaid
+graph BT
+	整数-->
+	有理数-->
+	实数-->
+	复数
+```
+
+类型直接的关系可能很复杂，塔式结构可能不足以表达。
+
+### 实例：符号代数
+
+多项式是基于一个或多个未定元（变量），通过乘法/加法构造出的代数式。
+
+首先用名为 首先用名为 poly 的数据结构表示多项式，其成分是一个变量和一组项：
+
+* 构造函数make-poly：从变量和项表构造多项式
+* 选择函数variable和term-list提取表达式的两个部分
+
+项表：
+
+* empty-termlist？：判断项表是否为空
+* first-term：提取最高次项
+* rest-term：取除最高次项之外的其余项的表
+* 构造函数make-term
+* 选择函数order和coeff取次数和系数
+
+定义加法和乘法：
+
+```scheme
+(define (add-poly p1 p2)
+  (if (same-variable? (variable p1) (variable p2))
+      (make-poly (variable p1)
+                 (add-terms (term-list p1) (term-list p2)))
+      (error "Polys not in same var -- ADD-POLY" (list p1 p2))))
+(define (mul-poly p1 p2)
+  (if (same-variable? (variable p1) (variable p2))
+      (make-poly (variable p1)
+                 (mul-terms (term-list p1) (term-list p2)))
+      (error "Polys not in same var -- MUL-POLY" (list p1 p2))))
+```
+
+定义相关操作：
+
+```scheme
+(define (install-polynomial-package)
+  ;; internal procedures. First, representation of poly
+  (define (make-poly variable term-list) (cons variable term-list))
+  (define (variable p) (car p))
+  (define (term-list p) (cdr p))
+  (define (add-poly p1 p2) ...) 
+  (define (mul-poly p1 p2) ...)
+  ;; interface to rest of the system
+  (define (tag p) (attach-tag 'polynomial p))
+  (put 'add '(polynomial polynomial)
+       (lambda (p1 p2) (tag (add-poly p1 p2))))
+  (put 'mul '(polynomial polynomial)
+       (lambda (p1 p2) (tag (mul-poly p1 p2))))
+  (put 'make 'polynomial
+       (lambda (var terms) (tag (make-poly var terms))))
+  'done)
+```
+
+项表求和过程:
+
+```scheme
+(define (add-terms L1 L2)
+  (cond ((empty-termlist? L1) L2)
+        ((empty-termlist? L2) L1)
+        (else
+         (let ((t1 (first-term L1)) (t2 (first-term L2)))
+           (cond ((> (order t1) (order t2))
+                  (adjoin-term t1 (add-terms (rest-terms L1) L2)))
+                 ((< (order t1) (order t2))
+                  (adjoin-term t2 (add-terms L1 (rest-terms L2))))
+                 (else
+                  (adjoin-term
+                   (make-term (order t1) (add (coeff t1) (coeff t2)))
+                   (add-terms (rest-terms L1) (rest-terms L2)))))))))
+```
+
+项表之积:
+
+```scheme
+(define (mul-terms L1 L2)
+  (if (empty-termlist? L1)
+      (the-empty-termlist)
+      (add-terms (mul-term-by-all-terms (first-term L1) L2)
+                 (mul-terms (rest-terms L1) L2))))
+(define (mul-term-by-all-terms t1 L)
+  (if (empty-termlist? L)
+      (the-empty-termlist)
+      (let ((t2 (first-term L)))
+        (adjoin-term
+         (make-term (+ (order t1) (order t2))
+                    (mul (coeff t1) (coeff t2)))
+         (mul-term-by-all-terms t1 (rest-terms L))))))
+```
+
+项表实现：
+
+```scheme
+(define (adjoin-term term term-list)
+  (if (=zero? (coeff term))
+      term-list
+      (cons term term-list)))
+(define (the-empty-termlist) '())
+(define (first-term term-list) (car term-list))
+(define (rest-terms term-list) (cdr term-list))
+(define (empty-termlist? term-list) (null? term-list))
+(define (make-term order coeff) (list order coeff))
+(define (order term) (car term))
+(define (coeff term) (cadr term))
+(define (make-polynomial var terms)
+  ((get 'make 'polynomial) var terms))
+```
+
+这个系统说明：虽然对象结构可能很复杂，一种对象可能以多个不同类的对象作为组成部分，但定义它们的通用操作并不困难。
+
+* 首先定义针对对象中各种成分的操作，安装适当的通用型过程。
+* 数据导向的程序技术完全能处理任意复杂的递归结构的数据对象。
+
