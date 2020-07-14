@@ -107,3 +107,332 @@ eval-if求值条件表达式：
   'ok)
 ```
 
+求值表达式序列，就是要在同一个环境里逐个求值序列里的表达式：
+
+```scheme
+(define (eval-sequence exps env)
+  (cond ((last-exp? exps) (eval (first-exp exps) env))
+        (else (eval (first-exp exps) env)
+              (eval-sequence (rest-exps exps) env))))
+```
+
+子求值表达式。只需要定义一个谓词，数和字符串属于此类：
+
+```scheme
+(define (self-evaluating? exp)
+  (cond ((number? exp) true)
+        ((string? exp) true)
+        (else false)))
+```
+
+变量：直接用符号表示，只需一个谓词
+
+```scheme
+(define (variable? exp) (symbol? exp))
+```
+
+其他类型通过判断类型标志加以区分，定义判断标志的通用过程
+
+```scheme
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      false))
+```
+
+引号表达式：
+
+```scheme
+(define (quoted? exp) (tagged-list? exp 'quote))
+(define (text-of- quotation exp) (cadr exp))
+```
+
+赋值表达式：
+
+```scheme
+(define (assignment? exp) (tagged-list? exp 'set!))
+(define (assignment-variable exp) (cadr exp))
+(define (assignment-value exp) (caddr exp))
+```
+
+定义表达式有两种形式：
+
+* $(define <var> <value>)$
+* $(define (<var> <parameter_1> ... <parameter_n>) <body>)$实际等同于$(define <var>(lambda(<parameter_1>...<parameter_n>) <body>))$
+
+```scheme
+(define (definition? exp) (tagged-list? exp 'define))
+(define (definition-variable exp)
+  (if (symbol? (cadr exp))
+      (cadr exp)
+      (caadr exp)))
+(define (definition-value exp)
+  (if (symbol? (cadr exp))
+      (caddr exp)
+      (make-lambda (cdadr exp)
+                   (caddr exp))))
+```
+
+lambda表达式在形式上是一个表，以lambda为第一个元素
+
+```scheme
+(define (lambda? exp) (tagged-list? exp 'lambda))
+(define (lambda-parameters exp) (cadr exp))
+(define (lambda-body exp) (cddr exp))
+(define (make-lambda parameters body)
+  (cons 'lambda (cons parameters body)))
+```
+
+if表达式：
+
+```scheme
+(define (if? exp) (tagged-list? exp 'if))
+(define (if-predicate exp) (cadr exp))
+(define (if-consequent exp) (caddr exp))
+(define (if-alternative exp)
+  (if (not (null? (cdddr exp)))
+      (cadddr exp)
+      'false))
+(define (make-if predicate consequent alternative)
+  (list 'if predicate consequent alternative))
+```
+
+begin 包装一系列表达式，要求对它们顺序求值：
+
+```scheme
+(define (begin? exp) (tagged-list? exp 'begin))
+(define (begin-actions exp) (cdr exp))
+(define (last-exp? seq) (null? (cdr seq)))
+(define (first-exp seq) (car seq))
+(define (rest-exps seq) (cdr seq))
+(define (sequence->exp seq)
+  (cond ((null? seq) seq)
+        ((last-exp? seq) (first-exp seq))
+        (else (make-begin seq))))
+(define (make-begin seq) (cons 'begin seq))
+```
+
+另一些语法过程：
+
+```scheme
+(define (application? exp) (pair? exp))
+(define (operator exp) (car exp))
+(define (operands exp) (cdr exp))
+(define (no-operands? ops) (null? ops))
+(define (first-operand ops) (car ops))
+(define (rest-operands ops) (cdr ops))
+```
+
+至此基本表达式的语法过程全部定义完成;
+
+派生表达式：cond，cond 总可以用嵌套的 if 表达式实现。把对 cond 的求值变换为 if：
+
+```scheme
+(define (cond? exp) (tagged-list? exp 'cond))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause) (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (cond->if exp) (expand-clauses (cond-clauses exp)))
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp (cond-actions first))
+                (error "ELSE clause isn't last -- COND->IF"
+                       clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp (cond-actions first))
+                     (expand-clauses rest))))))
+```
+
+为了实现对各种表达式的处理，还需要定义好过程和环境的表示形式，逻辑值等的表示形式，这些都属于求值器的内部数据结构。
+
+谓词检测。把所有非 false 对象都当作逻辑真：
+
+```scheme
+(define (true? x) (not (eq? x false)))
+(define (false? x) (eq? x false))
+```
+
+设$(apply-primitive-procedure <proc> <args>)$处理基本过程应用，$(primitive-procedure? <proc>)$检查基本过程。复合过程的处理：
+
+```scheme
+(define (make-procedure parameters body env)
+  (list 'procedure parameters body env))
+(define (compound-procedure? p) (tagged-list? p 'procedure))
+(define (procedure-parameters p) (cadr p))
+(define (procedure-body p) (caddr p))
+(define (procedure-environment p) (cadddr p))
+```
+
+解释器求值时需要有一个环境，现在考虑环境的实现
+
+环境是框架的序列，每个框架是一个表格，其中的项就是变量与值的约束。把环境定义为数据抽象，提供下面操作：
+
+* $(lookup-variable-value <var> <env>)$
+* $(extend-environment <variables> <values> <base-env>)$
+* $(define-variable! <var> <value> <env>)$
+* $(set-variable-value! <var> <value> <env>)$
+
+环境用框架的表表示，其 cdr 是外围环境：
+
+```scheme
+(define (first-frame env) (car env))
+(define (enclosing-environment env) (cdr env))
+(define the-empty-environment '())
+(define (make-frame variables values) (cons variablesd values))
+(define (frame-variables frame) (car frame))
+(define (frame-values frame) (cdr frame))
+(define (add-binding-to-frame! var val frame)
+  (set-car! frame (cons var (car frame)))
+  (set-cdr! frame (cons val (cdr frame))))
+```
+
+环境扩充：
+
+* 建立一个框架
+* 将其放在给定的环境的前面
+* 返回扩充后的环境
+
+变量表元素于值表长度不同时报错
+
+```scheme
+(define (extend-environment vars vals base-env)
+  (if (= (length vars) (length vals))
+      (cons (make-frame vars vals) base-env)
+      (if (< (length vars) (length vals))
+          (error "Too many arguments supplied" vars vals)
+          (error "Too few arguments supplied" vars vals))))
+```
+
+变量取值：顺序检查环境中的各框架
+
+* 找到变量的第一个出现时，返回值表中与变量对应的元素
+* 遇到空环境时报错
+
+```scheme
+(define (lookup-variable-value var env0)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (car vars)) (car vals))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame) (frame-values frame)))))
+  (env-loop env0))
+```
+
+变量赋值
+
+* 修改环境里变量的第一个出现的关联值
+* 找不到变量时报错
+
+```scheme
+(define (set-variable-value! var val env0)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (car vars)) (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable -- SET!" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame) (frame-values frame)))))
+  (env-loop env0))
+```
+
+ 定义变量：在第一个框架里加入该变量与值的关联。如果存在该变量的约束时修改与之关联的值。
+
+```scheme
+(define (define-variable! var val env)
+  (let ((frame (first-frame env)))
+    (define (scan vars vals)
+      (cond ((null? vars)
+             (add-binding-to-frame! var val frame))
+            ((eq? var (car vars)) (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (scan (frame-variables frame) (frame-values frame))))
+```
+
+**求值器的运行**
+
+创建初始环境：
+
+```scheme
+(define (setup-environment)
+  (let ((initial-env
+         (extend-environment (primitive-procedure-names)
+                             (primitive-procedure-objects)
+                             the-empty-environment)))
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+    initial-env))
+(define the-global-environment (setup-environment))
+```
+
+基本过程对象以符号 primitive 开头
+
+```scheme
+(define (primitive-procedure? proc)
+  (tagged-list? proc 'primitive))
+(define (primitive-implementation proc) (cadr proc))
+(define primitive-procedures
+  (list (list 'car car)
+        (list 'cdr cdr)
+        (list 'cons cons)
+        (list 'null? null?)
+        <more primitives>
+        ))
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+(define (primitive-procedure-objects)
+  (map (lambda (proc) (list 'primitive (cadr proc)))
+       primitive-procedures))
+```
+
+需要应用基本过程时，直接通过基础 Scheme 系统将它们应用于参数
+
+```scheme
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme
+   (primitive-implementation proc) args))
+```
+
+为了使用方便，可仿照 Scheme 系统，给元循环求值器定义一个基本循环，输出提示符后读入-求值-打印。输出前加一个特殊标志：
+
+```scheme
+(define input-prompt ";;; M-Eval input:")
+(define output-prompt ";;; M-Eval value:")
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output (eval input the-global-environment)))
+      (announce-output output-prompt)
+      (user-print output)))
+  (driver-loop))
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+(define (announce-output string)
+  (newline) (display string) (newline))
+```
+
+定义 user-print 过程是为了避免打印复合过程的环境，这种环境可能有复杂的结构，而且可能包含循环结构，打印环境的内容可能出问题
+
+```scheme
+(define (user-print object)
+  (if (compound-procedure? object)
+      (display (list 'compound-procedure
+                     (procedure-parameters object)
+                     (procedure-body object)
+                     '<procedure-env>))
+      (display object)))
+```
+
