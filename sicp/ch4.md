@@ -436,3 +436,160 @@ begin 包装一系列表达式，要求对它们顺序求值：
       (display object)))
 ```
 
+核心过程eval：
+
+```scheme
+(define (eval exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((quoted? exp) (text-of-quotation exp))
+        ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((if? exp) (eval-if exp env))
+        ((lambda? exp)
+         (make-procedure (lambda-parameters exp)
+                         (lambda-body exp)
+                         env))
+        ((begin? exp)
+         (eval-sequence (begin-actions exp) env))
+        ((cond? exp) (eval (cond->if exp) env))
+        ((application? exp)
+         (apply (eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else
+         (error "Unknown expression type -- EVAL" exp))))
+```
+
+apply 以一个过程和一个实参表为参数，实现过程应用
+
+```scheme
+(define (apply procedure arguments)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure procedure arguments))
+        ((compound-procedure? procedure)
+         (eval-sequence
+          (procedure-body procedure)
+          (extend-environment
+           (procedure-parameters procedure)
+           arguments
+           (procedure-environment procedure))))
+        (else
+         (error "Unknown procedure type -- APPLY" procedure))))
+```
+
+元循环求值器已经完成实现，但效率低；
+
+* 表达式的语法分析和执行交织在一起
+* 如果在程序中一个表达式需要求值很多次，就需要对它做很多次语法分析
+
+因此要将语法分析和执行分离；
+
+所以，可以把eval的工作分为两部分：
+
+* 分析被处理的程序，生成与之对应的可执行程序
+* 直接执行生成的程序
+
+因此定义一个过程analyze：
+
+* 专门做对于被求值表达式的语法分析
+* 对每个被分析的表达式，analyze返回一个过程，称为执行过程
+* 把表达式分析的结果封装在这个执行过程里
+
+```scheme
+(define (eval exp env) ((analyze exp) env))
+```
+
+analyze只是根据表达式类型完成分配工作：
+
+```scheme
+(define (analyze exp)
+  (cond ((self-evaluating? exp) (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((application? exp) (analyze-application exp))
+        (else (error "Unknown expression type -- ANALYZE" exp))))
+```
+
+**实现各种表达式的分析**
+
+```scheme
+(define (analyze-self-evaluating exp)
+        (lambda (env) exp))
+
+(define (analyze-quoted exp)
+  (let ((qval (text-of-quotation exp)))
+    (lambda (env) qval)))
+
+(define (analyze-variable exp)
+  (lambda (env)
+    (look-up-variable exp env)))
+
+(define (analyze-assignment exp)
+  (let ((var (assignment-variable exp))
+        (vproc (analyze (assignment-value exp))))
+    (lambda (env)
+      (set-variable-value! var (vproc env) env)
+      'ok)))
+
+(define (analyze-definition exp)
+  (let ((var (definition-variable epx))
+        (vproc (analyze (definition-value exp))))
+    (lambda (env)
+      (define-variable! var (vproc env) env)
+      'ok)))
+
+(define (analyze-if exp)
+  (let ((pproc (analyze (if-predicate exp)))
+        (cproc (analyze (if-consequent exp)))
+        (aproc (analyze (if-alternative exp))))
+    (lambda (env)
+      (if (true? (pproc env))
+          (cproc env)
+          (aproc env)))))
+
+(define (analyze-lambda exp)
+  (let ((vars (lambda-parameters exp))
+        (bproc (analyze-sequence (lambda-body exp))))
+    (lambda (env) (make-procedure vars bproc env))))
+
+(define (analyze-sequence exps)
+  (define (sequentially proc1 proc2)
+    (lambda (env) (proc1 env) (proc2 env)))
+  (define (loop first-proc rest-procs)
+    (if (null? rest-procs)
+        first-proc
+        (loop (sequentially first-proc (car rest-procs))
+              (cdr rest-procs))))
+  (let ((procs (map analyze exps)))
+    (if (null? procs) (error "Empty sequence -- ANALYZE"))
+    (loop (car procs) (cdr procs))))
+```
+
+过程应用的分析
+
+```scheme
+(define (analyze-application exp)
+  (let ((fproc (analyze (operator exp))) # 分析运算符表达式
+        (aprocs (map analyze (operands exp))))
+    (lambda (env)
+      (execute-application (fproc env)
+                           (map (lambda (aproc) (aproc env)) aprocs)))))
+(define (execute-application proc args)
+  (cond ((primitive-procedure? proc)
+         (apply-primitive-procedure proc args))
+        ((compound-procedure? proc)
+         ((procedure-body proc)
+          (extend-environment (procedure-parameters proc)
+                              args
+                              (procedure-environment proc))))
+        (else
+         (error "Unknown proc type -- EXEC-APPLICATION" proc))))
+```
+
+至此分析求值器的构造完成。
